@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Drive Upload</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial;
+            background: #f1f3f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .drop-area {
+            border: 2px dashed #1a73e8;
+            padding: 40px;
+            text-align: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .drop-area:hover {
+            background: #e8f0fe;
+        }
+
+        .file-item {
+            margin-top: 15px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress {
+            height: 100%;
+            width: 0%;
+            background: #1a73e8;
+            transition: width 0.2s;
+        }
+
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Upload File</h2>
+
+    <div class="drop-area" onclick="fileInput.click()">
+        Click hoặc kéo thả file vào đây
+    </div>
+
+    <input type="file" id="fileInput" multiple hidden>
+    <div id="fileList"></div>
+</div>
+
+<script>
+
+    const fileInput = document.getElementById("fileInput");
+    const fileList = document.getElementById("fileList");
+
+    fileInput.addEventListener("change", function () {
+        uploadFiles(this.files);
+    });
+
+    async function uploadFiles(files) {
+        for (let file of files) {
+            createUploadItem(file);
+            await uploadSingleFile(file);
+        }
+    }
+
+    function createUploadItem(file) {
+        const safeId = file.name.replace(/[^a-zA-Z0-9]/g, "_");
+
+        const item = document.createElement("div");
+        item.className = "file-item";
+        item.id = "item-" + safeId;
+
+        item.innerHTML = `
+            <div><b>${file.name}</b> (${(file.size/1024/1024).toFixed(2)} MB)</div>
+            <div class="progress-bar">
+                <div class="progress" id="progress-${safeId}"></div>
+            </div>
+            <div id="status-${safeId}"></div>
+        `;
+
+        fileList.appendChild(item);
+    }
+
+    function uploadSingleFile(file) {
+
+        const safeId = file.name.replace(/[^a-zA-Z0-9]/g, "_");
+
+        return new Promise((resolve) => {
+
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append("file", file);
+
+            xhr.open("POST", "/upload", true);
+
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    let percent = (e.loaded / e.total) * 100;
+                    document.getElementById("progress-" + safeId)
+                        .style.width = percent + "%";
+                }
+            };
+
+            xhr.onload = function () {
+
+                const status = document.getElementById("status-" + safeId);
+
+                if (xhr.status === 200) {
+
+                    status.innerHTML = "✔ Upload thành công";
+                    status.className = "success";
+
+                } else if (xhr.status === 409) {
+
+                    status.innerHTML = "⚠ File đã tồn tại";
+                    status.className = "error";
+
+                } else {
+
+                    status.innerHTML = "✖ Upload thất bại";
+                    status.className = "error";
+                }
+
+                resolve();
+            };
+
+            xhr.onerror = function () {
+                resolve();
+            };
+
+            xhr.send(formData);
+        });
+    }
+
+</script>
+
+</body>
+</html>
