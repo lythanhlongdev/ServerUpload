@@ -5,81 +5,121 @@
     <title>ServerUpload Monitoring</title>
 
     <style>
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg,#eef2f7,#dde6f3);
             margin: 0;
-            padding: 20px;
+            padding: 30px;
         }
 
         h1 {
             text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: #666;
             margin-bottom: 30px;
         }
 
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 25px;
         }
 
         .card {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.07);
+            transition: 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
         }
 
         .card h2 {
             margin-top: 0;
-            margin-bottom: 15px;
+            margin-bottom: 18px;
             font-size: 18px;
             border-bottom: 1px solid #eee;
             padding-bottom: 8px;
         }
 
-        .metric { margin-bottom: 14px; }
+        .metric { margin-bottom: 16px; }
 
         .label {
-            font-size: 13px;
-            color: #666;
+            font-size: 12px;
+            color: #777;
         }
 
         .value {
-            font-weight: bold;
-            margin-top: 2px;
+            font-weight: 600;
+            margin-top: 3px;
         }
 
         .progress {
             height: 8px;
-            background: #e6e6e6;
-            border-radius: 4px;
+            background: #ececec;
+            border-radius: 5px;
             overflow: hidden;
-            margin-top: 5px;
+            margin-top: 6px;
         }
 
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: #4CAF50;
-            transition: width 0.5s ease;
+            background: linear-gradient(90deg,#4CAF50,#66bb6a);
+            transition: width 0.4s ease;
         }
 
-        .warning { background: #ff9800 !important; }
-        .danger  { background: #f44336 !important; }
+        .warning { background: linear-gradient(90deg,#ff9800,#ffb74d) !important; }
+        .danger  { background: linear-gradient(90deg,#f44336,#ef5350) !important; }
+
+        .status-indicator {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .status-online {
+            color: #0f9d58;
+        }
+
+        .status-offline {
+            color: #d93025;
+        }
 
         .footer {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 40px;
             font-size: 12px;
             color: #777;
         }
+        .ram-note {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #b71c1c;
+            background: #fff3f3;
+            padding: 6px 8px;
+            border-left: 3px solid #f44336;
+            border-radius: 6px;
+        }
+
     </style>
 </head>
 
 <body>
 
-<h1>Monitoring</h1>
+<h1>ServerUpload Monitoring</h1>
+<div class="subtitle">Real-time JVM • OS • Tomcat Metrics</div>
+<div class="status-indicator" id="serverStatus">Checking server...</div>
 
 <div class="dashboard">
 
@@ -117,7 +157,7 @@
 
     <!-- OS -->
     <div class="card">
-        <h2>OS</h2>
+        <h2>Operating System</h2>
 
         <div class="metric">
             <div class="label">CPU Cores</div>
@@ -134,7 +174,9 @@
             <div class="label">RAM Usage</div>
             <div class="value" id="ramText"></div>
             <div class="progress"><div class="progress-bar" id="ramBar"></div></div>
-            <div>dữ liệu ram chỉ mang tính tương đối, không chính xác !</div>
+            <div style="font-size:11px;color:#888;margin-top:5px;">
+                RAM usage is approximate depending on OS reporting.
+            </div>
         </div>
     </div>
 
@@ -165,6 +207,61 @@
 
         <div class="metric"><div class="label">Connection Timeout</div>
             <div class="value" id="timeout"></div></div>
+    </div>
+</div>
+<div class="card" style="margin-top:30px;">
+    <h2>📘 System Technical Explanation</h2>
+
+    <div style="font-size:13px; line-height:1.7; color:#555;">
+
+        <b>1. JVM Heap Usage</b><br>
+        - Phản ánh bộ nhớ dùng bởi Java objects.<br>
+        - >75%: bắt đầu GC thường xuyên hơn.<br>
+        - >90% liên tục: nguy cơ Full GC, pause dài, giảm tốc upload.<br>
+        - Nếu thường xuyên >85% → tăng -Xmx hoặc tối ưu buffer upload.<br><br>
+
+        <b>2. Process CPU</b><br>
+        - CPU tiêu thụ bởi tiến trình Java (upload, IO, thread handling).<br>
+        - >70% liên tục → server đang xử lý nhiều request song song.<br>
+        - Nếu CPU cao + Thread cao → hệ thống gần quá tải.<br><br>
+
+        <b>3. System CPU</b><br>
+        - Tổng CPU toàn hệ thống (bao gồm Docker, OS, service khác).<br>
+        - Nếu System CPU cao nhưng Process CPU thấp → có tiến trình khác đang chiếm tài nguyên.<br>
+        - Trong môi trường Docker, có thể bị giới hạn CPU quota.<br><br>
+
+        <b>4. RAM Usage (OS Level)</b>
+        <div class="ram-note">
+            ⚠ RAM usage hiển thị dựa trên số liệu hệ điều hành.
+            Trên Linux, bộ nhớ bao gồm cả page cache và buffer,
+            vì vậy giá trị có thể cao hơn mức thực tế ứng dụng đang sử dụng.
+            Đây chỉ là chỉ số tương đối để theo dõi xu cho vui .
+        </div>
+        <b>5. Tomcat Thread Pool</b><br>
+        - Active Threads: số request đang xử lý.<br>
+        - Max Threads: giới hạn cấu hình connector.<br>
+        - >80% thread usage → request mới có thể phải chờ.<br>
+        - 100% + Queue tăng → bắt đầu delay upload.<br><br>
+
+        <b>6. Queue Size</b><br>
+        - Số request đang chờ thread xử lý.<br>
+        - Queue >0 thường xuyên → hệ thống đang vượt khả năng xử lý tức thời.<br>
+        - Nếu queue tăng dần theo thời gian → cần tăng maxThreads hoặc scale server.<br><br>
+
+        <b>7. Connection Timeout</b><br>
+        - Nếu upload file lớn và timeout thấp → có thể bị cắt giữa chừng.<br>
+        - Với upload LAN nên >= 60000ms.<br><br>
+
+        <b>⚠ Tình huống quá tải thường gặp khi upload:</b><br>
+        - Nhiều file lớn upload song song → thread pool full<br>
+        - File >5GB + WiFi yếu → giữ thread lâu → queue tăng<br>
+        - Disk IO chậm → CPU thấp nhưng thread vẫn cao<br><br>
+
+        <b>Khuyến nghị vận hành:</b><br>
+        - Giữ Thread usage < 75% khi chạy production<br>
+        - Giữ Heap usage < 85%<br>
+        - Monitor queue nếu upload > 20 user cùng lúc<br>
+        - Nếu Docker: đảm bảo container không bị giới hạn RAM/CPU<br>
 
     </div>
 </div>
@@ -173,7 +270,7 @@
     Auto refresh every 3 seconds
 </div>
 <div class="footer">
-    (c) Ly Thanh Long by GPT :)))
+    (c) Ly Thanh Long by GPT
 </div>
 
 <script>
@@ -190,57 +287,71 @@
 
     async function loadData() {
 
-        const res = await fetch('/system');
-        const data = await res.json();
+        try {
 
-        // JVM
-        document.getElementById('pid').textContent = data.jvm.pid;
-        document.getElementById('javaVersion').textContent = data.jvm.javaVersion;
+            const res = await fetch('/system');
+            const data = await res.json();
 
-        document.getElementById('heapText').textContent =
-            `${data.jvm.usedHeapMB} MB / ${data.jvm.maxHeapMB} MB (${data.jvm.heapUsagePercent}%)`;
+            document.getElementById("serverStatus").textContent = "Server Online";
+            document.getElementById("serverStatus").className =
+                "status-indicator status-online";
 
-        document.getElementById('processCpuText').textContent =
-            data.jvm.processCpuPercent + "%";
+            // JVM
+            document.getElementById('pid').textContent = data.jvm.pid;
+            document.getElementById('javaVersion').textContent = data.jvm.javaVersion;
 
-        document.getElementById('threads').textContent =
-            data.jvm.liveThreads;
+            document.getElementById('heapText').textContent =
+                `${data.jvm.usedHeapMB} MB / ${data.jvm.maxHeapMB} MB (${data.jvm.heapUsagePercent}%)`;
 
-        setBar('heapBar', data.jvm.heapUsagePercent);
-        setBar('processCpuBar', data.jvm.processCpuPercent);
+            document.getElementById('processCpuText').textContent =
+                data.jvm.processCpuPercent + "%";
 
-        // OS
-        document.getElementById('cpuCores').textContent =
-            data.os.cpuCores;
+            document.getElementById('threads').textContent =
+                data.jvm.liveThreads;
 
-        document.getElementById('systemCpuText').textContent =
-            data.os.systemCpuPercent + "%";
+            setBar('heapBar', data.jvm.heapUsagePercent);
+            setBar('processCpuBar', data.jvm.processCpuPercent);
 
-        document.getElementById('ramText').textContent =
-            `${data.os.totalRamMB - data.os.freeRamMB} MB / ${data.os.totalRamMB} MB (${data.os.ramUsagePercent}%)`;
+            // OS
+            document.getElementById('cpuCores').textContent =
+                data.os.cpuCores;
 
-        setBar('systemCpuBar', data.os.systemCpuPercent);
-        setBar('ramBar', data.os.ramUsagePercent);
+            document.getElementById('systemCpuText').textContent =
+                data.os.systemCpuPercent + "%";
 
-        // Tomcat
-        document.getElementById('port').textContent = data.tomcat.port;
-        document.getElementById('protocol').textContent = data.tomcat.protocol;
-        document.getElementById('maxThreads').textContent = data.tomcat.maxThreads;
-        document.getElementById('activeThreads').textContent = data.tomcat.activeThreads;
-        document.getElementById('poolSize').textContent = data.tomcat.poolSize;
-        document.getElementById('queueSize').textContent = data.tomcat.queueSize;
-        document.getElementById('timeout').textContent =
-            data.tomcat.connectionTimeout + " ms";
+            document.getElementById('ramText').textContent =
+                `${data.os.totalRamMB - data.os.freeRamMB} MB / ${data.os.totalRamMB} MB (${data.os.ramUsagePercent}%)`;
 
-        let threadPercent =
-            (data.tomcat.activeThreads / data.tomcat.maxThreads) * 100;
+            setBar('systemCpuBar', data.os.systemCpuPercent);
+            setBar('ramBar', data.os.ramUsagePercent);
 
-        setBar('threadBar', threadPercent);
+            // Tomcat
+            document.getElementById('port').textContent = data.tomcat.port;
+            document.getElementById('protocol').textContent = data.tomcat.protocol;
+            document.getElementById('maxThreads').textContent = data.tomcat.maxThreads;
+            document.getElementById('activeThreads').textContent = data.tomcat.activeThreads;
+            document.getElementById('poolSize').textContent = data.tomcat.poolSize;
+            document.getElementById('queueSize').textContent = data.tomcat.queueSize;
+            document.getElementById('timeout').textContent =
+                data.tomcat.connectionTimeout + " ms";
+
+            let threadPercent =
+                (data.tomcat.activeThreads / data.tomcat.maxThreads) * 100;
+
+            setBar('threadBar', threadPercent);
+
+        } catch (e) {
+
+            document.getElementById("serverStatus").textContent = "Server Offline";
+            document.getElementById("serverStatus").className =
+                "status-indicator status-offline";
+        }
     }
 
     setInterval(loadData, 3000);
     loadData();
 
 </script>
+
 </body>
 </html>

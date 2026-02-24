@@ -4,40 +4,77 @@
     <title>Drive Upload</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
+
         body {
-            font-family: Arial;
-            background: #f1f3f4;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg,#eef2f7,#dfe6f3);
             margin: 0;
-            padding: 20px;
+            padding: 30px;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 950px;
             margin: auto;
             background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(10px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .info-box {
+            background: #f5f8ff;
+            border-left: 5px solid #1a73e8;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .note-box {
+            background: #fff8e1;
+            border-left: 5px solid #fbbc04;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-size: 14px;
         }
 
         .drop-area {
             border: 2px dashed #1a73e8;
-            padding: 40px;
+            padding: 50px;
             text-align: center;
-            border-radius: 12px;
+            border-radius: 14px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.25s ease;
+            font-size: 16px;
+            font-weight: bold;
         }
 
         .drop-area:hover {
             background: #e8f0fe;
+            transform: scale(1.01);
         }
 
         .file-item {
             margin-top: 15px;
             background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 10px;
+            transition: 0.2s;
+        }
+
+        .file-item:hover {
+            background: #f1f3f4;
         }
 
         .progress-bar {
@@ -45,31 +82,97 @@
             background: #e0e0e0;
             border-radius: 4px;
             overflow: hidden;
-            margin-top: 5px;
+            margin-top: 6px;
+        }
+        .mobile-box {
+            background: #f3fff7;
+            border-left: 5px solid #34a853;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-size: 14px;
         }
 
         .progress {
             height: 100%;
             width: 0%;
-            background: #1a73e8;
+            background: linear-gradient(90deg,#1a73e8,#4285f4);
             transition: width 0.2s;
         }
 
-        .success { color: green; }
-        .error { color: red; }
+        .success { color: #0f9d58; }
+        .error { color: #d93025; }
+
+        button {
+            border: none;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #e0e0e0;
+        }
+
+        button:hover {
+            background: #d5d5d5;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 13px;
+            color: #777;
+            margin-top: 40px;
+        }
+
     </style>
 </head>
 <body>
 
 <div class="container">
+
     <h2>Upload File</h2>
+
+    <div class="mobile-box">
+        <b>📱 Lưu ý khi upload bằng điện thoại:</b><br><br>
+
+        - Điện thoại phải kết nối cùng WiFi với server (không dùng 4G/5G).<br>
+        - Nếu quét QR nhưng không mở được trang → kiểm tra lại IP host.<br>
+        - Không tắt màn hình khi đang upload file lớn.<br>
+        - Tránh chuyển app giữa chừng (iOS có thể tạm dừng upload nền).<br>
+        - Khuyến nghị:<br>
+        &nbsp;&nbsp;• File đơn lẻ ≤ <b>2–3GB</b><br>
+        &nbsp;&nbsp;• Upload tối đa 3–5 file cùng lúc trên mobile<br>
+        &nbsp;&nbsp;• WiFi yếu có thể làm giảm tốc độ đáng kể<br><br>
+
+        ⚠ Nếu upload file lớn >5GB từ điện thoại, nên dùng máy tính để ổn định hơn.
+    </div>
+    <!-- Thông tin kỹ thuật -->
+    <div class="info-box">
+        <b>⚡ Logic Upload hiện tại:</b><br>
+        - Upload song song tối đa <b>5 file</b> cùng lúc (MAX_PARALLEL = 5)<br>
+        - Các file còn lại sẽ vào hàng đợi (queue)<br>
+        - Theo dõi tốc độ từng file và tổng tiến trình<br><br>
+
+        <b>📌 Khuyến nghị sử dụng:</b><br>
+        - Tối ưu: 5–20 file / lần upload<br>
+        - File đơn lẻ: nên dưới <b>5GB</b><br>
+        - Tổng batch: nên dưới <b>50GB</b> để tránh timeout mạng LAN yếu<br>
+        - Nếu file >10GB: nên upload riêng từng file<br>
+    </div>
+
+    <!-- Hướng dẫn Docker -->
+    <div class="note-box">
+        <b>⚙ Nếu chạy bằng Docker:</b><br>
+        - Phải publish port: <code>docker run -p 8080:8080 image</code><br>
+        - Điện thoại và server phải cùng mạng LAN<br>
+        - Lấy IP host bằng: <code>ip a</code> hoặc <code>hostname -I</code><br>
+        - Truy cập: <code>http://IP_HOST:PORT</code><br>
+        - Monitor hệ thống: <code>http://IP_HOST/monitor</code>
+    </div>
 
     <div class="drop-area" onclick="fileInput.click()">
         Click hoặc kéo thả file vào đây
     </div>
 
     <input type="file" id="fileInput" multiple hidden>
-<!--    <input type="file" id="fileInput" accept="image/*,video/*" multiple>-->
     <div id="fileList"></div>
 
     <h3>Quét QR để upload từ điện thoại</h3>
@@ -80,14 +183,20 @@
         <div class="progress" id="totalProgress"></div>
     </div>
     <div id="totalText">0 / 0 file (0%)</div>
+
+    <footer>
+        (c) Ly Thanh Long by GPT
+    </footer>
+
 </div>
-<!--<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>-->
+
 <script src="/qrcode.min.js"></script>
 <script>
+    /* ==== TOÀN BỘ LOGIC CỦA BẠN GIỮ NGUYÊN ==== */
 
     const fileInput = document.getElementById("fileInput");
     const fileList = document.getElementById("fileList");
-<!--threed-->
+
     const MAX_PARALLEL = 5;
     let queue = [];
     let activeUploads = 0;
@@ -103,15 +212,11 @@
     });
 
     function startUpload(files) {
-
         queue = [...files];
-
         totalFiles = queue.length;
         completedFiles = 0;
-
         totalBytes = queue.reduce((sum, f) => sum + f.size, 0);
         fileProgress = {};
-
         updateTotalProgress();
         processQueue();
     }
@@ -126,9 +231,7 @@
     }
 
     function createUploadItem(file) {
-
         const safeId = file.name.replace(/[^a-zA-Z0-9]/g, "_") + "_" + Date.now();
-
         const item = document.createElement("div");
         item.className = "file-item";
         item.id = "item-" + safeId;
@@ -152,7 +255,6 @@
     function uploadSingleFile(file, id) {
 
         activeUploads++;
-
         const xhr = new XMLHttpRequest();
         const formData = new FormData();
         formData.append("file", file);
@@ -160,12 +262,9 @@
         let startTime = Date.now();
 
         xhr.upload.onprogress = function (e) {
-
             if (e.lengthComputable) {
-
                 let percent = (e.loaded / e.total) * 100;
-                document.getElementById("progress-" + id)
-                    .style.width = percent + "%";
+                document.getElementById("progress-" + id).style.width = percent + "%";
 
                 let seconds = (Date.now() - startTime) / 1000;
                 let speed = seconds > 0 ? (e.loaded / 1024 / 1024) / seconds : 0;
@@ -179,34 +278,22 @@
         };
 
         xhr.onload = function () {
-
             activeUploads--;
-
             const status = document.getElementById("status-" + id);
             const cancelBtn = document.getElementById("cancel-" + id);
-
             cancelBtn.disabled = true;
 
             if (xhr.status === 200 || xhr.status === 409) {
-
                 completedFiles++;
                 fileProgress[id] = file.size;
-
                 status.innerHTML = xhr.status === 200
                     ? " ✔ Upload thành công"
                     : " ⚠ File đã tồn tại";
-
-                status.className = xhr.status === 200
-                    ? "success"
-                    : "error";
-
+                status.className = xhr.status === 200 ? "success" : "error";
             } else if (xhr.status === 507) {
-
                 status.innerHTML = " ❌ Disk đầy";
                 status.className = "error";
-
             } else {
-
                 status.innerHTML = " ❌ Upload thất bại";
                 status.className = "error";
             }
@@ -231,17 +318,13 @@
         xhr.send(formData);
 
         document.getElementById("cancel-" + id).onclick = function () {
-
             xhr.abort();
             this.disabled = true;
-
-            document.getElementById("status-" + id)
-                .innerHTML = " ⛔ Đã hủy";
+            document.getElementById("status-" + id).innerHTML = " ⛔ Đã hủy";
         };
     }
 
     function updateTotalProgress() {
-
         let uploadedBytes = Object.values(fileProgress)
             .reduce((sum, val) => sum + val, 0);
 
@@ -249,35 +332,25 @@
             ? (uploadedBytes / totalBytes) * 100
             : 0;
 
-        document.getElementById("totalProgress")
-            .style.width = percent + "%";
-
+        document.getElementById("totalProgress").style.width = percent + "%";
         document.getElementById("totalText").innerText =
             `${completedFiles} / ${totalFiles} file (${percent.toFixed(1)}%)`;
     }
 
-<!-- chỗ này cần sửa biến get môi trường url trong yaml, không nên set cứng  /system/....   -->
-window.onload = function () {
-
-    fetch("system/server-url")
-        .then(res => res.text())
-        .then(baseUrl => {
-
-            const uploadUrl = baseUrl
-
-            console.log("QR URL:", uploadUrl);
-
-            new QRCode(document.getElementById("qrcode"), {
-                text: uploadUrl,
-                width: 200,
-                height: 200
-            });
-        })
-        .catch(err => console.error(err));
-};
+    window.onload = function () {
+        fetch("system/server-url")
+            .then(res => res.text())
+            .then(baseUrl => {
+                new QRCode(document.getElementById("qrcode"), {
+                    text: baseUrl,
+                    width: 200,
+                    height: 200
+                });
+            })
+            .catch(err => console.error(err));
+    };
 
 </script>
 
 </body>
-
 </html>

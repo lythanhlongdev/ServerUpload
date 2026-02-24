@@ -39,7 +39,8 @@ app:
   # Thư mục lưu file upload
   # Phải đảm bảo user chạy service có quyền ghi
   # Mặc định: /var/upload
-  upload-dir: ${UPLOAD_DIR:/var/upload}
+#  upload-dir: ${UPLOAD_DIR:/var/upload}
+  upload-dir: ${UPLOAD_DIR:/home/orsted/Pictures/Cloud}
 
   # Giới hạn số upload song song (tự xử lý ở service nếu cần)
   # Giúp tránh quá tải IO disk
