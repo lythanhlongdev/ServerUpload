@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>ltldev</groupId>
-	<artifactId>SeverUpFile</artifactId>
+	<artifactId>ServerUpload</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>SeverUpFile</name>
 	<description>Upload file simple</description>
