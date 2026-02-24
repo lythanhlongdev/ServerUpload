@@ -1,78 +1,108 @@
-# ==============================
+# =====================================================
 # SERVER CONFIGURATION
-# ==============================
+# =====================================================
 server:
-  # Port chạy ứng dụng (mặc định 8080 nếu không truyền biến môi trường)
+  # Cổng chạy ứng dụng
+  # Có thể override bằng biến môi trường SERVER_PORT
+  # Mặc định: 8080
   port: ${SERVER_PORT:8080}
 
-  # Bind address (0.0.0.0 để truy cập từ mạng nội bộ / container)
-  address: ${ADDRESS:0.0.0.0}
+  # Địa chỉ bind
+  # 0.0.0.0 = cho phép truy cập từ mạng nội bộ / Docker
+  address: ${SERVER_ADDRESS:0.0.0.0}
 
   tomcat:
-    # Không giới hạn dung lượng swallow khi client hủy upload giữa chừng
-    # -1 = unlimited
-    max-swallow-size: -1
+    # Giới hạn dung lượng dữ liệu Tomcat "nuốt" khi client hủy upload giữa chừng
+    # Không nên để -1 trong production (nguy cơ DOS)
+    # Mặc định: 2GB
+    max-swallow-size: ${TOMCAT_MAX_SWALLOW_SIZE:2GB}
 
-    # Không giới hạn kích thước form POST
-    # -1 = unlimited (đã có giới hạn phía multipart bên dưới)
-    max-http-form-post-size: -1
+    # Giới hạn kích thước form POST tổng thể
+    # Mặc định: 10GB
+    max-http-form-post-size: ${TOMCAT_MAX_FORM_SIZE:10GB}
 
-    # Cấu hình thread pool của Tomcat
     threads:
       # Số thread tối đa xử lý request đồng thời
-      # 50 là đủ cho server upload nội bộ
-      max: 50
+      # Upload file lớn giữ connection lâu → không nên để quá thấp
+      # Mặc định: 100
+      max: ${TOMCAT_MAX_THREADS:100}
 
       # Số thread duy trì sẵn
-      min-spare: 10
+      # Mặc định: 20
+      min-spare: ${TOMCAT_MIN_SPARE:20}
 
 
-# ==============================
+# =====================================================
 # APPLICATION CUSTOM CONFIG
-# ==============================
+# =====================================================
 app:
-  # Thư mục lưu file upload (Linux mặc định)
-  # Có thể override bằng biến môi trường MY_URL
-#  upload-dir: ${MY_URL:/home/orsted/sever/upload}
-  upload-dir: ${MY_URL:/var/upload}
+  # Thư mục lưu file upload
+  # Phải đảm bảo user chạy service có quyền ghi
+  # Mặc định: /var/upload
+  upload-dir: ${UPLOAD_DIR:/var/upload}
 
-  # Nếu chạy Windows thì dùng dòng dưới
-  # upload-dir: ${MY_URL:C:/Your-dir}
+  # Giới hạn số upload song song (tự xử lý ở service nếu cần)
+  # Giúp tránh quá tải IO disk
+  max-parallel-upload: ${MAX_PARALLEL_UPLOAD:10}
+
+  # Danh sách MIME type được phép
+  # Nên validate lại phía backend để tránh upload file độc hại
+  allowed-types: ${ALLOWED_TYPES:image/*,video/*,application/pdf}
 
 
-# ==============================
+# =====================================================
 # SPRING CONFIGURATION
-# ==============================
+# =====================================================
 spring:
 
   main:
     # Chỉ khởi tạo bean khi cần → giảm memory footprint
-    lazy-initialization: true
+    # Production nên để true nếu không cần startup nhanh
+    lazy-initialization: ${LAZY_INIT:true}
 
   servlet:
     multipart:
       # Bật hỗ trợ upload multipart
       enabled: true
 
-      # Kích thước file tối đa cho mỗi file
-      max-file-size: 5120MB   # 5GB
+      # Kích thước tối đa cho mỗi file
+      # Mặc định: 5GB
+      max-file-size: ${MAX_FILE_SIZE:5GB}
 
-      # Tổng kích thước tối đa cho toàn bộ request
-      max-request-size: 10240MB  # 10GB
+      # Tổng kích thước tối đa cho một request
+      # Mặc định: 10GB
+      max-request-size: ${MAX_REQUEST_SIZE:10GB}
 
-      # Ghi file ra disk sớm thay vì giữ trong RAM
-      # (giảm memory usage khi upload file lớn)
-      file-size-threshold: 2KB
-
+      # Ngưỡng ghi file xuống disk
+      # Giữ nhỏ để tránh giữ file lớn trong RAM
+      file-size-threshold: ${FILE_THRESHOLD:2KB}
 
   thymeleaf:
-    # Tắt cache khi dev (production nên bật true nếu có dùng view)
-    cache: false
+    # Dev nên để false
+    # Production nếu dùng view thì nên bật true
+    cache: ${THYMELEAF_CACHE:false}
 
 
-# ==============================
+# =====================================================
+# LOGGING CONFIGURATION
+# =====================================================
+logging:
+  level:
+    # Mức log tổng thể
+    root: ${LOG_LEVEL:INFO}
+
+    # Giảm log framework để tránh spam log
+    org.springframework: ${SPRING_LOG_LEVEL:WARN}
+
+  file:
+    # File log output
+    # Nên mount ra volume nếu dùng Docker
+    name: ${LOG_FILE:logs/serverupload.log}
+
+
+# =====================================================
 # API CONFIGURATION
-# ==============================
+# =====================================================
 api:
   # Prefix chung cho toàn bộ API
-  prefix: /api/v1
+  prefix: ${API_PREFIX:/api/v1}
