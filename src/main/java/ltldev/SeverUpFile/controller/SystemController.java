@@ -1,24 +1,23 @@
 package ltldev.SeverUpFile.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
-import ltldev.SeverUpFile.logging.AppLogger;
-import ltldev.SeverUpFile.service.UploadService;
+import lombok.RequiredArgsConstructor;
+import ltldev.SeverUpFile.service.MonitorService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Collections;
+import java.util.Map;
 
-@Data
 @RestController
-//@RequestMapping("${api.prefix}/system")
 @RequestMapping("/system")
+@RequiredArgsConstructor
 public class SystemController {
+
+    private final MonitorService monitorService;
 
     @Value("${server.port}")
     private String port;
@@ -28,6 +27,13 @@ public class SystemController {
         String ip = getLocalIp();
         return "http://" + ip + ":" + port;
     }
+
+
+    @GetMapping("")
+    public Map<String, Object> monitor() {
+        return monitorService.getSystemMonitor();
+    }
+
 
     private String getLocalIp() {
         try {
@@ -50,4 +56,7 @@ public class SystemController {
 
         return "127.0.0.1";
     }
+
+
+
 }

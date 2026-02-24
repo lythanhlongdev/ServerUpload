@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>ltldev</groupId>
 	<artifactId>ServerUpload</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>SeverUpFile</name>
 	<description>Upload file simple</description>
 	<url/>
@@ -30,13 +30,15 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
 		<dependency>
@@ -44,27 +46,32 @@
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<!-- Source: https://mvnrepository.com/artifact/org.springframework/spring-aop -->
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-aop</artifactId>
-			<version>7.0.5</version>
-			<scope>compile</scope>
-		</dependency>
+
 	</dependencies>
 
 	<build>
 		<plugins>
+<!--			buil docekr giam img-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jlink-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+					<addModules>
+						<addModule>java.base</addModule>
+						<addModule>java.logging</addModule>
+						<addModule>java.management</addModule>
+						<addModule>java.naming</addModule>
+						<addModule>java.sql</addModule>
+					</addModules>
+					<outputDirectory>${project.build.directory}/runtime</outputDirectory>
+					<stripDebug>true</stripDebug>
+					<noManPages>true</noManPages>
+					<noHeaderFiles>true</noHeaderFiles>
+					<compress>2</compress>
+				</configuration>
+			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>

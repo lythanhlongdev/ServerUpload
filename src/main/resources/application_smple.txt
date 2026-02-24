@@ -33,8 +33,7 @@ server:
 app:
   # Thư mục lưu file upload (Linux mặc định)
   # Có thể override bằng biến môi trường MY_URL
-#  upload-dir: ${MY_URL:/home/orsted/sever/upload}
-  upload-dir: ${MY_URL:/var/upload}
+  upload-dir: ${MY_URL:/home/orsted/sever/upload}
 
   # Nếu chạy Windows thì dùng dòng dưới
   # upload-dir: ${MY_URL:C:/Your-dir}
@@ -76,3 +75,34 @@ spring:
 api:
   # Prefix chung cho toàn bộ API
   prefix: /api/v1
+
+
+  ////
+
+  server:
+    port: ${SERVER_PORT:8080}  # Cấu hình cổng cho máy chủ web nhúng, giá trị mặc định là 8080
+    address: ${ADDRESS:0.0.0.0}
+
+    tomcat:
+      max-swallow-size: -1
+      max-http-form-post-size: -1
+
+  app:
+  # For Linux
+    upload-dir: ${MY_URL:/home/orsted/sever/upload}
+  #   For window
+  #  upload-dir: ${MY_URL:C:\Your-dir}
+
+  spring:
+    servlet:
+      multipart:
+        enabled: true
+        max-file-size: 5120MB  # Max file send
+        max-request-size: 10240MB
+
+    thymeleaf:
+      cache: false
+
+  # url
+  api:
+    prefix: /api/v1

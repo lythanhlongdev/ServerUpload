@@ -1,0 +1,60 @@
+version: "3.9"   # Phiên bản schema docker compose
+
+services:
+  serverupload:   # Tên service (bạn có thể đổi)
+
+    image: serverupload:latest   # Image đã build bằng docker build
+    container_name: serverupload # Tên container khi chạy
+
+    restart: unless-stopped
+    # Tự restart container nếu crash
+    # Trừ khi bạn stop thủ công
+
+    ports:
+      - "8080:8080"
+      # Map port host:container
+      # Truy cập qua http://localhost:8080
+
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # Kích hoạt profile prod (nếu bạn có application-prod.yml)
+
+      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx1024m"
+      # Giới hạn heap JVM
+      # Xms = RAM tối thiểu cấp cho JVM
+      # Xmx = RAM tối đa JVM được dùng
+
+    volumes:
+#      <urlHost>:<url_container>
+      - /var/docker/data:/var/upload
+      # Thư mục upload bên ngoài host
+      # Container bị xoá vẫn giữ dữ liệu
+
+      - ./logs:/logs
+      # Log được lưu ra ngoài container
+
+    deploy:
+      resources:
+        limits:
+          memory: 1200M
+        reservations:
+          memory: 512M
+      # Giới hạn RAM container tối đa 1.2GB
+      # Đảm bảo không ăn hết RAM máy
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/monitor"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # Docker sẽ kiểm tra API monitor mỗi 30s
+      # Nếu fail 3 lần -> container unhealthy
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+      # Giới hạn log container
+      # Tối đa 3 file, mỗi file 10MB
+      # Tránh log chiếm đầy ổ đĩa

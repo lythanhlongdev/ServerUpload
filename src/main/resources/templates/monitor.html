@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ServerUpload Monitoring</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .metric { margin-bottom: 14px; }
+
+        .label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .value {
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .progress {
+            height: 8px;
+            background: #e6e6e6;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #4CAF50;
+            transition: width 0.5s ease;
+        }
+
+        .warning { background: #ff9800 !important; }
+        .danger  { background: #f44336 !important; }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>ServerUpload Monitoring</h1>
+
+<div class="dashboard">
+
+    <!-- JVM -->
+    <div class="card">
+        <h2>JVM</h2>
+
+        <div class="metric">
+            <div class="label">PID</div>
+            <div class="value" id="pid"></div>
+        </div>
+
+        <div class="metric">
+            <div class="label">Java Version</div>
+            <div class="value" id="javaVersion"></div>
+        </div>
+
+        <div class="metric">
+            <div class="label">Heap Usage</div>
+            <div class="value" id="heapText"></div>
+            <div class="progress"><div class="progress-bar" id="heapBar"></div></div>
+        </div>
+
+        <div class="metric">
+            <div class="label">Process CPU</div>
+            <div class="value" id="processCpuText"></div>
+            <div class="progress"><div class="progress-bar" id="processCpuBar"></div></div>
+        </div>
+
+        <div class="metric">
+            <div class="label">Live Threads</div>
+            <div class="value" id="threads"></div>
+        </div>
+    </div>
+
+    <!-- OS -->
+    <div class="card">
+        <h2>OS</h2>
+
+        <div class="metric">
+            <div class="label">CPU Cores</div>
+            <div class="value" id="cpuCores"></div>
+        </div>
+
+        <div class="metric">
+            <div class="label">System CPU</div>
+            <div class="value" id="systemCpuText"></div>
+            <div class="progress"><div class="progress-bar" id="systemCpuBar"></div></div>
+        </div>
+
+        <div class="metric">
+            <div class="label">RAM Usage</div>
+            <div class="value" id="ramText"></div>
+            <div class="progress"><div class="progress-bar" id="ramBar"></div></div>
+        </div>
+    </div>
+
+    <!-- Tomcat -->
+    <div class="card">
+        <h2>Tomcat</h2>
+
+        <div class="metric"><div class="label">Port</div>
+            <div class="value" id="port"></div></div>
+
+        <div class="metric"><div class="label">Protocol</div>
+            <div class="value" id="protocol"></div></div>
+
+        <div class="metric"><div class="label">Max Threads</div>
+            <div class="value" id="maxThreads"></div></div>
+
+        <div class="metric">
+            <div class="label">Active Threads</div>
+            <div class="value" id="activeThreads"></div>
+            <div class="progress"><div class="progress-bar" id="threadBar"></div></div>
+        </div>
+
+        <div class="metric"><div class="label">Pool Size</div>
+            <div class="value" id="poolSize"></div></div>
+
+        <div class="metric"><div class="label">Queue Size</div>
+            <div class="value" id="queueSize"></div></div>
+
+        <div class="metric"><div class="label">Connection Timeout</div>
+            <div class="value" id="timeout"></div></div>
+
+    </div>
+</div>
+
+<div class="footer">
+    Auto refresh every 3 seconds
+</div>
+
+<script>
+
+    function setBar(id, percent) {
+        const bar = document.getElementById(id);
+        percent = Math.min(percent, 100);
+        bar.style.width = percent + "%";
+        bar.classList.remove("warning","danger");
+
+        if (percent > 90) bar.classList.add("danger");
+        else if (percent > 75) bar.classList.add("warning");
+    }
+
+    async function loadData() {
+
+        const res = await fetch('/system');
+        const data = await res.json();
+
+        // JVM
+        document.getElementById('pid').textContent = data.jvm.pid;
+        document.getElementById('javaVersion').textContent = data.jvm.javaVersion;
+
+        document.getElementById('heapText').textContent =
+            `${data.jvm.usedHeapMB} MB / ${data.jvm.maxHeapMB} MB (${data.jvm.heapUsagePercent}%)`;
+
+        document.getElementById('processCpuText').textContent =
+            data.jvm.processCpuPercent + "%";
+
+        document.getElementById('threads').textContent =
+            data.jvm.liveThreads;
+
+        setBar('heapBar', data.jvm.heapUsagePercent);
+        setBar('processCpuBar', data.jvm.processCpuPercent);
+
+        // OS
+        document.getElementById('cpuCores').textContent =
+            data.os.cpuCores;
+
+        document.getElementById('systemCpuText').textContent =
+            data.os.systemCpuPercent + "%";
+
+        document.getElementById('ramText').textContent =
+            `${data.os.totalRamMB - data.os.freeRamMB} MB / ${data.os.totalRamMB} MB (${data.os.ramUsagePercent}%)`;
+
+        setBar('systemCpuBar', data.os.systemCpuPercent);
+        setBar('ramBar', data.os.ramUsagePercent);
+
+        // Tomcat
+        document.getElementById('port').textContent = data.tomcat.port;
+        document.getElementById('protocol').textContent = data.tomcat.protocol;
+        document.getElementById('maxThreads').textContent = data.tomcat.maxThreads;
+        document.getElementById('activeThreads').textContent = data.tomcat.activeThreads;
+        document.getElementById('poolSize').textContent = data.tomcat.poolSize;
+        document.getElementById('queueSize').textContent = data.tomcat.queueSize;
+        document.getElementById('timeout').textContent =
+            data.tomcat.connectionTimeout + " ms";
+
+        let threadPercent =
+            (data.tomcat.activeThreads / data.tomcat.maxThreads) * 100;
+
+        setBar('threadBar', threadPercent);
+    }
+
+    setInterval(loadData, 3000);
+    loadData();
+
+</script>
+</body>
+</html>

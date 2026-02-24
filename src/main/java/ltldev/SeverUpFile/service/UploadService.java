@@ -18,7 +18,6 @@ public class UploadService {
 
     // add log
     public HttpStatus handleUpload(MultipartFile file) {
-
         long startTime = System.currentTimeMillis();
 
         String originalFilename = file.getOriginalFilename();
@@ -50,7 +49,7 @@ public class UploadService {
             Path targetLocation = uploadPath.resolve(originalFilename);
 
             if (Files.exists(targetLocation)) {
-                AppLogger.warn("[UPLOAD][EXISTS] " + originalFilename);
+//                AppLogger.warn("[UPLOAD][EXISTS] " + originalFilename);
                 return HttpStatus.CONFLICT;
             }
 
@@ -72,6 +71,7 @@ public class UploadService {
 
             // 🔥 COPY FILE
             try (InputStream inputStream = file.getInputStream()) {
+                AppLogger.info("Active threads before start copy file  " + Thread.activeCount());
                 Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
             }
 

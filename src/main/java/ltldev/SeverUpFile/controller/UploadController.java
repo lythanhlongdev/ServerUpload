@@ -24,7 +24,6 @@ public class UploadController {
             AppLogger.warn("File rỗng");
             return ResponseEntity.badRequest().body("File rỗng");
         }
-        AppLogger.info("Active threads: " + Thread.activeCount());
         String clientIp = getClientIp(request);
         String device = detectDevice(request.getHeader("User-Agent"));
 

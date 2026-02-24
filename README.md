@@ -138,6 +138,62 @@ ip addr
 ```
 
 ---
+Dưới đây là đoạn **cảnh báo tiếng Việt ngắn gọn**, đúng trọng tâm vấn đề Docker & QR:
+
+---
+
+## ⚠️ Cảnh báo khi chạy bằng Docker
+
+Khi chạy ứng dụng bên trong Docker, hệ thống có thể tự động lấy **IP của container (ví dụ: 172.x.x.x)** thay vì **IP LAN của máy host**.
+
+Điều này dẫn đến:
+
+* Mã QR được tạo ra chứa IP của container
+* Thiết bị khác trong mạng nội bộ (LAN) sẽ **không truy cập được**
+* Ứng dụng vẫn hoạt động bình thường, chỉ sai địa chỉ trong mã QR
+* không sao ở ngoài tim đúng ip của host và port mặc định 8080 đã ánh xạ vào trong docker rôi
+
+Nguyên nhân là do Docker sử dụng mạng riêng (network namespace), nên IP bên trong container không phải IP thực của máy host.
+
+---
+Dưới đây là phần bổ sung cho README về URL endpoint, viết ngắn gọn, đúng trọng tâm:
+
+---
+
+## 🌐 URL & Endpoint Truy Cập
+
+Sau khi khởi động ứng dụng (Docker hoặc chạy trực tiếp), hệ thống sẽ hoạt động tại:
+
+```
+http://<IP_HOST>:8080
+```
+
+### Các endpoint chính:
+
+* Trang chính:
+
+```
+/
+```
+
+* Trang giám sát hệ thống:
+
+```
+/monitor
+```
+
+Ví dụ truy cập:
+
+```
+http://192.168.1.50:8080/
+http://192.168.1.50:8080/monitor
+```
+
+> Lưu ý: Khi chạy bằng Docker, cần sử dụng **IP LAN của máy host**, không sử dụng IP container (172.x.x.x).
+> Công ánh xạ mặc định 8080 sẽ truy cập được nếu ở host.
+
+---
+
 
 ## 📊 Hiệu năng thực tế
 

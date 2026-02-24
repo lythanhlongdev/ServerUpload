@@ -1,12 +1,11 @@
-FROM ubuntu:latest
-LABEL authors="orsted"
-
-# ===== STAGE 1: BUILD =====
+# ======================
+# STAGE 1: BUILD
+# ======================
 FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
-# Copy pom trước để tận dụng cache
+# Cache dependency
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
@@ -17,18 +16,21 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 
-# ===== STAGE 2: RUNTIME =====
-FROM eclipse-temurin:17-jdk-alpine
+# ======================
+# STAGE 2: RUNTIME
+# ======================
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-# Tạo thư mục upload + log
-RUN mkdir -p /data/uploads
-RUN mkdir -p /logs
+# Tạo thư mục runtime
+RUN mkdir -p /data/uploads /logs
 
-# Copy jar từ stage build
+# Copy jar
 COPY --from=builder /app/target/*.jar app.jar
 
+# Expose port
 EXPOSE 8080
 
-ENTRYPOINT ["java","-jar","app.jar","top", "-b"]
+# Chạy app
+ENTRYPOINT ["java","-Xms256m","-Xmx512m","-jar","app.jar"]
