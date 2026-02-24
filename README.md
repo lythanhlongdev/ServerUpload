@@ -85,10 +85,15 @@ spring:
       location: /var/uploads/tmp
       max-file-size: -1
       max-request-size: -1
+app:
+# For Linux 
+  upload-dir: ${MY_URL:/home/orsted/sever/upload}
+#   For window
+#  upload-dir: ${MY_URL:C:\Your-dir}
 ```
 
-⚠ Không nên để thư mục tạm ở phân vùng root nhỏ, bở vỳ copy file nặng hàng trăm GB bến tạm không trụ nổi => chưa muốn fix
-
+⚠ Không nên để thư mục tạm ở phân vùng root nhỏ, bở vỳ copy file nặng hàng trăm GB bến tạm không trụ nổi => chưa muốn fix. 
+upload-dir là đường dẫn lưu file được gửi về PC/Laptop 
 ---
 
 ## 🚀 Hướng dẫn cài đặt
@@ -130,7 +135,7 @@ Sau khi khởi động:
 ```
 http://<LAN_IP>:<PORT>
 ```
-
+Mặc định Port:8080 
 Xác định IP LAN bằng:
 
 ```bash
