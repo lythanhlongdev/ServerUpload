@@ -7,7 +7,7 @@ server:
     max-http-form-post-size: -1
 
 app:
-
+# For Linux
   upload-dir: ${MY_URL:/home/orsted/sever/upload}
 #   For window
 #  upload-dir: ${MY_URL:C:\Your-dir}
