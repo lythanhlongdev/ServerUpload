@@ -7,15 +7,16 @@ server:
     max-http-form-post-size: -1
 
 app:
-#  upload-dir: ${MY_URL:/home/orsted/sever/upload}
-  upload-dir: /media/veracrypt1/Demobackup
-#  upload-dir: ${UPLOAD_DIR:/data/uploads}
+
+  upload-dir: ${MY_URL:/home/orsted/sever/upload}
+#   For window
+#  upload-dir: ${MY_URL:C:\Your-dir}
 
 spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 5120MB
+      max-file-size: 5120MB  # Max file send
       max-request-size: 10240MB
 
   thymeleaf:
