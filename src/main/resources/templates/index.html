@@ -69,27 +69,65 @@
     </div>
 
     <input type="file" id="fileInput" multiple hidden>
+<!--    <input type="file" id="fileInput" accept="image/*,video/*" multiple>-->
     <div id="fileList"></div>
-</div>
 
+    <h3>Quét QR để upload từ điện thoại</h3>
+    <div id="qrcode"></div>
+
+    <h3>Tổng tiến trình</h3>
+    <div class="progress-bar">
+        <div class="progress" id="totalProgress"></div>
+    </div>
+    <div id="totalText">0 / 0 file (0%)</div>
+</div>
+<!--<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>-->
+<script src="/qrcode.min.js"></script>
 <script>
 
     const fileInput = document.getElementById("fileInput");
     const fileList = document.getElementById("fileList");
+<!--threed-->
+    const MAX_PARALLEL = 5;
+    let queue = [];
+    let activeUploads = 0;
+
+    let totalFiles = 0;
+    let completedFiles = 0;
+
+    let fileProgress = {};
+    let totalBytes = 0;
 
     fileInput.addEventListener("change", function () {
-        uploadFiles(this.files);
+        startUpload(this.files);
     });
 
-    async function uploadFiles(files) {
-        for (let file of files) {
-            createUploadItem(file);
-            await uploadSingleFile(file);
+    function startUpload(files) {
+
+        queue = [...files];
+
+        totalFiles = queue.length;
+        completedFiles = 0;
+
+        totalBytes = queue.reduce((sum, f) => sum + f.size, 0);
+        fileProgress = {};
+
+        updateTotalProgress();
+        processQueue();
+    }
+
+    function processQueue() {
+        while (activeUploads < MAX_PARALLEL && queue.length > 0) {
+            const file = queue.shift();
+            const id = createUploadItem(file);
+            fileProgress[id] = 0;
+            uploadSingleFile(file, id);
         }
     }
 
     function createUploadItem(file) {
-        const safeId = file.name.replace(/[^a-zA-Z0-9]/g, "_");
+
+        const safeId = file.name.replace(/[^a-zA-Z0-9]/g, "_") + "_" + Date.now();
 
         const item = document.createElement("div");
         item.className = "file-item";
@@ -100,64 +138,146 @@
             <div class="progress-bar">
                 <div class="progress" id="progress-${safeId}"></div>
             </div>
-            <div id="status-${safeId}"></div>
+            <div>
+                <span id="speed-${safeId}">0 MB/s</span>
+                <span id="status-${safeId}"></span>
+                <button id="cancel-${safeId}">Hủy</button>
+            </div>
         `;
 
         fileList.appendChild(item);
+        return safeId;
     }
 
-    function uploadSingleFile(file) {
+    function uploadSingleFile(file, id) {
 
-        const safeId = file.name.replace(/[^a-zA-Z0-9]/g, "_");
+        activeUploads++;
 
-        return new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append("file", file);
 
-            const xhr = new XMLHttpRequest();
-            const formData = new FormData();
-            formData.append("file", file);
+        let startTime = Date.now();
 
-            xhr.open("POST", "/upload", true);
+        xhr.upload.onprogress = function (e) {
 
-            xhr.upload.onprogress = function (e) {
-                if (e.lengthComputable) {
-                    let percent = (e.loaded / e.total) * 100;
-                    document.getElementById("progress-" + safeId)
-                        .style.width = percent + "%";
-                }
-            };
+            if (e.lengthComputable) {
 
-            xhr.onload = function () {
+                let percent = (e.loaded / e.total) * 100;
+                document.getElementById("progress-" + id)
+                    .style.width = percent + "%";
 
-                const status = document.getElementById("status-" + safeId);
+                let seconds = (Date.now() - startTime) / 1000;
+                let speed = seconds > 0 ? (e.loaded / 1024 / 1024) / seconds : 0;
 
-                if (xhr.status === 200) {
+                document.getElementById("speed-" + id)
+                    .innerText = " | " + speed.toFixed(2) + " MB/s";
 
-                    status.innerHTML = "✔ Upload thành công";
-                    status.className = "success";
+                fileProgress[id] = e.loaded;
+                updateTotalProgress();
+            }
+        };
 
-                } else if (xhr.status === 409) {
+        xhr.onload = function () {
 
-                    status.innerHTML = "⚠ File đã tồn tại";
-                    status.className = "error";
+            activeUploads--;
 
-                } else {
+            const status = document.getElementById("status-" + id);
+            const cancelBtn = document.getElementById("cancel-" + id);
 
-                    status.innerHTML = "✖ Upload thất bại";
-                    status.className = "error";
-                }
+            cancelBtn.disabled = true;
 
-                resolve();
-            };
+            if (xhr.status === 200 || xhr.status === 409) {
 
-            xhr.onerror = function () {
-                resolve();
-            };
+                completedFiles++;
+                fileProgress[id] = file.size;
 
-            xhr.send(formData);
-        });
+                status.innerHTML = xhr.status === 200
+                    ? " ✔ Upload thành công"
+                    : " ⚠ File đã tồn tại";
+
+                status.className = xhr.status === 200
+                    ? "success"
+                    : "error";
+
+            } else if (xhr.status === 507) {
+
+                status.innerHTML = " ❌ Disk đầy";
+                status.className = "error";
+
+            } else {
+
+                status.innerHTML = " ❌ Upload thất bại";
+                status.className = "error";
+            }
+
+            updateTotalProgress();
+            processQueue();
+        };
+
+        xhr.onerror = function () {
+            activeUploads--;
+            processQueue();
+        };
+
+        xhr.onabort = function () {
+            activeUploads--;
+            fileProgress[id] = 0;
+            updateTotalProgress();
+            processQueue();
+        };
+
+        xhr.open("POST", "/upload", true);
+        xhr.send(formData);
+
+        document.getElementById("cancel-" + id).onclick = function () {
+
+            xhr.abort();
+            this.disabled = true;
+
+            document.getElementById("status-" + id)
+                .innerHTML = " ⛔ Đã hủy";
+        };
     }
+
+    function updateTotalProgress() {
+
+        let uploadedBytes = Object.values(fileProgress)
+            .reduce((sum, val) => sum + val, 0);
+
+        let percent = totalBytes > 0
+            ? (uploadedBytes / totalBytes) * 100
+            : 0;
+
+        document.getElementById("totalProgress")
+            .style.width = percent + "%";
+
+        document.getElementById("totalText").innerText =
+            `${completedFiles} / ${totalFiles} file (${percent.toFixed(1)}%)`;
+    }
+
+<!-- chỗ này cần sửa biến get môi trường url trong yaml, không nên set cúng /system/....   -->
+window.onload = function () {
+
+    fetch("system/server-url")
+        .then(res => res.text())
+        .then(baseUrl => {
+
+            const uploadUrl = baseUrl
+
+            console.log("QR URL:", uploadUrl);
+
+            new QRCode(document.getElementById("qrcode"), {
+                text: uploadUrl,
+                width: 200,
+                height: 200
+            });
+        })
+        .catch(err => console.error(err));
+};
 
 </script>
 
 </body>
+
 </html>
