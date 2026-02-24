@@ -52,6 +52,7 @@ Thư mục lưu trữ chính
 * Hiệu năng phụ thuộc chủ yếu vào Disk I/O
 * Không phụ thuộc nhiều vào CPU
 * Không yêu cầu database (tuỳ nhu cầu mở rộng)
+* java.io.tmpdir => vùng nhớ tạm của JVM ánh xạ vào thư mục tmp của ổ địa ( copy file lớn cần lưu ý )
 
 ---
 
