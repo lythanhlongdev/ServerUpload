@@ -4,7 +4,6 @@
     <title>Drive Upload</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-
         body {
             font-family: Arial, sans-serif;
             background: linear-gradient(135deg,#eef2f7,#dfe6f3);
@@ -16,9 +15,9 @@
             max-width: 950px;
             margin: auto;
             background: white;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            padding: 30px;
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
             animation: fadeIn 0.4s ease-in-out;
         }
 
@@ -27,26 +26,44 @@
             to { opacity:1; transform:translateY(0); }
         }
 
-        h2 {
-            margin-top: 0;
+        h2 { margin-top: 0; }
+
+        .card {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
         }
 
-        .info-box {
-            background: #f5f8ff;
+        .network-card {
+            background: #f4f8ff;
             border-left: 5px solid #1a73e8;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 14px;
         }
 
-        .note-box {
-            background: #fff8e1;
-            border-left: 5px solid #fbbc04;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            font-size: 14px;
+        .docker-card {
+            background: #fff3e0;
+            border-left: 5px solid #fb8c00;
+        }
+
+        .mobile-card {
+            background: #e8f5e9;
+            border-left: 5px solid #34a853;
+        }
+
+        .logic-card {
+            background: #f5f8ff;
+            border-left: 5px solid #5c6bc0;
+        }
+
+        .ip-box {
+            margin-top: 8px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #1565c0;
         }
 
         .drop-area {
@@ -70,11 +87,6 @@
             background: #f8f9fa;
             padding: 12px;
             border-radius: 10px;
-            transition: 0.2s;
-        }
-
-        .file-item:hover {
-            background: #f1f3f4;
         }
 
         .progress-bar {
@@ -83,14 +95,6 @@
             border-radius: 4px;
             overflow: hidden;
             margin-top: 6px;
-        }
-        .mobile-box {
-            background: #f3fff7;
-            border-left: 5px solid #34a853;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            font-size: 14px;
         }
 
         .progress {
@@ -111,9 +115,7 @@
             background: #e0e0e0;
         }
 
-        button:hover {
-            background: #d5d5d5;
-        }
+        button:hover { background: #d5d5d5; }
 
         footer {
             text-align: center;
@@ -121,51 +123,62 @@
             color: #777;
             margin-top: 40px;
         }
-
     </style>
 </head>
 <body>
 
 <div class="container">
 
-    <h2>Upload File</h2>
+    <h2>Drive Upload</h2>
 
-    <div class="mobile-box">
-        <b>📱 Lưu ý khi upload bằng điện thoại:</b><br><br>
+    <div class="card network-card">
+        <b>🌐 Server Network Information</b>
+        <div class="ip-box" id="serverUrl">Đang lấy địa chỉ server...</div>
 
-        - Điện thoại phải kết nối cùng WiFi với server (không dùng 4G/5G).<br>
-        - Nếu quét QR nhưng không mở được trang → kiểm tra lại IP host.<br>
-        - Không tắt màn hình khi đang upload file lớn.<br>
-        - Tránh chuyển app giữa chừng (iOS có thể tạm dừng upload nền).<br>
-        - Khuyến nghị:<br>
-        &nbsp;&nbsp;• File đơn lẻ ≤ <b>2–3GB</b><br>
-        &nbsp;&nbsp;• Upload tối đa 3–5 file cùng lúc trên mobile<br>
-        &nbsp;&nbsp;• WiFi yếu có thể làm giảm tốc độ đáng kể<br><br>
-
-        ⚠ Nếu upload file lớn >5GB từ điện thoại, nên dùng máy tính để ổn định hơn.
-    </div>
-    <!-- Thông tin kỹ thuật -->
-    <div class="info-box">
-        <b>⚡ Logic Upload hiện tại:</b><br>
-        - Upload song song tối đa <b>5 file</b> cùng lúc (MAX_PARALLEL = 5)<br>
-        - Các file còn lại sẽ vào hàng đợi (queue)<br>
-        - Theo dõi tốc độ từng file và tổng tiến trình<br><br>
-
-        <b>📌 Khuyến nghị sử dụng:</b><br>
-        - Tối ưu: 5–20 file / lần upload<br>
-        - File đơn lẻ: nên dưới <b>5GB</b><br>
-        - Tổng batch: nên dưới <b>50GB</b> để tránh timeout mạng LAN yếu<br>
-        - Nếu file >10GB: nên upload riêng từng file<br>
+        QR Code được tạo dựa trên địa chỉ này.
+        Nếu tắt/bật lại mạng, IP có thể thay đổi → cần reload trang để tạo QR mới.
+        Monitor hệ thống:
+        <div id="monitorUrl"></div>
     </div>
 
-    <!-- Hướng dẫn Docker -->
-    <div class="note-box">
-        <b>⚙ Nếu chạy bằng Docker:</b><br>
-        - Phải publish port: <code>docker run -p 8080:8080 image</code><br>
-        - Điện thoại và server phải cùng mạng LAN<br>
-        - Lấy IP host bằng: <code>ip a</code> hoặc <code>hostname -I</code><br>
-        - Truy cập: <code>http://IP_HOST:PORT</code><br>
-        - Monitor hệ thống: <code>http://IP_HOST/monitor</code>
+    <div class="card docker-card">
+        <b>🐳 Nếu chạy bằng Docker</b><br>
+        IP hiển thị phía trên có thể là IP container (vd: 172.x.x.x) và sẽ không truy cập được từ điện thoại.<br><br>
+
+        ➜ Lấy IP máy host thật:<br>
+        Linux: <code>ip a</code> hoặc <code>hostname -I</code><br>
+        Windows: <code>ipconfig</code><br><br>
+
+        Sau đó truy cập dạng:<br>
+        <code>http://192.168.x.x:8080</code>
+    </div>
+
+    <div class="card mobile-card">
+        <br><b>📱 Hướng dẫn cho điện thoại</b>
+        - Phải cùng WiFi với server (không dùng 4G/5G).<br>
+        - Vào Cài đặt WiFi → xem IP của điện thoại.<br>
+        - Phải cùng tên wifi.<br>
+        - 3 số đầu phải giống IP server.<br><br>
+
+        Ví dụ hợp lệ:<br>
+        Server: 192.168.1.5<br>
+        Phone: 192.168.1.12<br><br>
+
+        ⚠ Không tắt màn hình khi upload file lớn.
+        ⚠ iOS có thể tạm dừng upload nếu chuyển app.
+    </div>
+
+    <div class="card logic-card">
+        <b>⚡ Logic Upload</b><br>
+        - Upload song song tối đa <b>5 file</b> (MAX_PARALLEL = 5).<br>
+        - File còn lại vào hàng đợi (queue).<br>
+        - Theo dõi tiến trình từng file và tổng tiến trình.<br><br>
+
+        <b>📌 Khuyến nghị:</b><br>
+        - 5–20 file mỗi lần upload.<br>
+        - File đơn lẻ nên ≤ 5GB.<br>
+        - Tổng batch ≤ 50GB để tránh timeout LAN yếu.<br>
+        - File >10GB nên upload riêng từng file.
     </div>
 
     <div class="drop-area" onclick="fileInput.click()">
@@ -337,18 +350,49 @@
             `${completedFiles} / ${totalFiles} file (${percent.toFixed(1)}%)`;
     }
 
-    window.onload = function () {
-        fetch("system/server-url")
-            .then(res => res.text())
-            .then(baseUrl => {
-                new QRCode(document.getElementById("qrcode"), {
-                    text: baseUrl,
-                    width: 200,
-                    height: 200
-                });
-            })
-            .catch(err => console.error(err));
-    };
+<!--    window.onload = function () {-->
+<!--        fetch("system/server-url")-->
+<!--            .then(res => res.text())-->
+<!--            .then(baseUrl => {-->
+
+<!--                 // Hiển thị lên FE-->
+<!--                document.getElementById("serverUrl").innerText = baseUrl;-->
+
+<!--                new QRCode(document.getElementById("qrcode"), {-->
+<!--                    text: baseUrl,-->
+<!--                    width: 200,-->
+<!--                    height: 200-->
+<!--                });-->
+<!--            })-->
+<!--            .catch(err => console.error(err));-->
+<!--    };-->
+
+        window.onload = function () {
+    fetch("system/server-url")
+        .then(res => res.text())
+        .then(baseUrl => {
+
+            // Hiển thị base URL
+            document.getElementById("serverUrl").innerText = baseUrl;
+
+            // Monitor URL
+            const monitorUrl = baseUrl + "/monitor";
+
+            // Render link clickable
+            document.getElementById("monitorUrl").innerHTML = `
+                <b>📊 Monitor hệ thống:</b><br>
+                <a href="${monitorUrl}" target="_blank">${monitorUrl}</a>
+            `;
+
+            // QR code
+            new QRCode(document.getElementById("qrcode"), {
+                text: baseUrl,
+                width: 200,
+                height: 200
+            });
+        })
+        .catch(err => console.error(err));
+};
 
 </script>
 
