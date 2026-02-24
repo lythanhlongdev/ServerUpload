@@ -135,7 +135,7 @@ Sau khi khởi động:
 ```
 http://<LAN_IP>:<PORT>
 ```
-
+Mặc định Port:8080 
 Xác định IP LAN bằng:
 
 ```bash
