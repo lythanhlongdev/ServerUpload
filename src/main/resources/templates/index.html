@@ -203,7 +203,7 @@
 
 </div>
 
-<script src="/qrcode.min.js"></script>
+
 <script>
     /* ==== TOÀN BỘ LOGIC CỦA BẠN GIỮ NGUYÊN ==== */
 
@@ -349,26 +349,8 @@
         document.getElementById("totalText").innerText =
             `${completedFiles} / ${totalFiles} file (${percent.toFixed(1)}%)`;
     }
-
-<!--    window.onload = function () {-->
-<!--        fetch("system/server-url")-->
-<!--            .then(res => res.text())-->
-<!--            .then(baseUrl => {-->
-
-<!--                 // Hiển thị lên FE-->
-<!--                document.getElementById("serverUrl").innerText = baseUrl;-->
-
-<!--                new QRCode(document.getElementById("qrcode"), {-->
-<!--                    text: baseUrl,-->
-<!--                    width: 200,-->
-<!--                    height: 200-->
-<!--                });-->
-<!--            })-->
-<!--            .catch(err => console.error(err));-->
-<!--    };-->
-
-        window.onload = function () {
-    fetch("system/server-url")
+    window.onload = function () {
+    fetch("/system/server-url")
         .then(res => res.text())
         .then(baseUrl => {
 
@@ -385,16 +367,21 @@
             `;
 
             // QR code
-            new QRCode(document.getElementById("qrcode"), {
-                text: baseUrl,
-                width: 200,
-                height: 200
-            });
+            if (window.QRCode) {
+                new QRCode(document.getElementById("qrcode"), {
+                    text: baseUrl,
+                    width: 200,
+                    height: 200
+                });
+            } else {
+                console.error("QRCode lib not loaded");
+            }
         })
-        .catch(err => console.error(err));
+        .catch(err => console.error("Fetch error:", err));
 };
 
 </script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!--<script src="../qrcode.min.js"></script>-->
 </body>
 </html>

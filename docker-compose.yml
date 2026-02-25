@@ -1,60 +1,130 @@
-version: "3.9"   # Phiên bản schema docker compose
+version: "3.9"   # Phiên bản docker-compose schema
 
 services:
-  serverupload:   # Tên service (bạn có thể đổi)
+  serverupload:   # Tên service (container service name)
 
-    image: serverupload:latest   # Image đã build bằng docker build
-    container_name: serverupload # Tên container khi chạy
+    image: serverupload:latest   # Image đã build
+    container_name: serverupload # Tên container hiển thị khi docker ps
 
     restart: unless-stopped
-    # Tự restart container nếu crash
-    # Trừ khi bạn stop thủ công
+    # Tự restart nếu crash, trừ khi bạn stop thủ công
 
+    # ===============================
+    # MAP PORT
+    # ===============================
     ports:
       - "8080:8080"
-      # Map port host:container
-      # Truy cập qua http://localhost:8080
+      # host_port:container_port
+      # Truy cập: http://IP_HOST:8080
 
+    # ===============================
+    # BIẾN MÔI TRƯỜNG SPRING + JVM
+    # ===============================
     environment:
+
+      # Kích hoạt profile Spring (nếu có application-prod.yml)
       SPRING_PROFILES_ACTIVE: prod
-      # Kích hoạt profile prod (nếu bạn có application-prod.yml)
 
-      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx1024m"
-      # Giới hạn heap JVM
-      # Xms = RAM tối thiểu cấp cho JVM
-      # Xmx = RAM tối đa JVM được dùng
+      # ---------- SERVER CONFIG ----------
+      SERVER_PORT: 8080                # Port server (khuyên giữ 8080)
+      SERVER_ADDRESS: 0.0.0.0          # Lắng nghe tất cả IP
 
+      # ---------- TOMCAT UPLOAD ----------
+      TOMCAT_MAX_SWALLOW_SIZE: 2GB     # Kích thước swallow (khuyên 2GB)
+      TOMCAT_MAX_FORM_SIZE: 10GB       # Form POST max (khuyên = max file)
+      TOMCAT_MAX_THREADS: 50           # Số thread tối đa (khuyên 20–100)
+      TOMCAT_MIN_SPARE: 5               # Thread idle (khuyên 5)
+
+      # ---------- APP CONFIG ----------
+      UPLOAD_DIR: /var/upload           # Thư mục lưu file trong container
+      MAX_PARALLEL_UPLOAD: 10           # Upload song song (khuyên 5–20)
+      ALLOWED_TYPES: "image/*,video/*,application/pdf"
+
+      # ---------- SPRING MULTIPART ----------
+      MAX_FILE_SIZE: 5GB                # File đơn tối đa (tùy server)
+      MAX_REQUEST_SIZE: 10GB            # Tổng request tối đa
+      FILE_THRESHOLD: 0                 # 0 = ghi disk trực tiếp (an toàn nhất)
+
+      # ---------- LOGGING ----------
+      LOG_LEVEL: INFO                   # Root log level
+      SPRING_LOG_LEVEL: WARN            # Spring log giảm spam
+      LOG_FILE: /logs/serverupload.log  # File log
+
+      # ---------- API PREFIX ----------
+      API_PREFIX: /api/v1
+
+      # ================= JVM TUNING =================
+      # -Xms512m  : RAM khởi động JVM (khuyên 256m–1g)
+      # -Xmx1024m : RAM tối đa JVM (phải < mem_limit Docker)
+      # ActiveProcessorCount: Java chỉ thấy 2 CPU (quan trọng trong Docker)
+      # UseG1GC  : GC tốt cho upload file lớn
+      # tmpdir   : thư mục temp upload (ghi vào RAM nếu dùng tmpfs)
+      JAVA_TOOL_OPTIONS: >
+        -Xms512m
+        -Xmx1024m
+        -XX:ActiveProcessorCount=2
+        -XX:+UseG1GC
+        -Djava.io.tmpdir=/tmp/upload-cache
+
+    # ===============================
+    # VOLUME LƯU DỮ LIỆU
+    # ===============================
     volumes:
-#      <urlHost>:<url_container>
       - /var/docker/data:/var/upload
-      # Thư mục upload bên ngoài host
-      # Container bị xoá vẫn giữ dữ liệu
+      # Host:/var/docker/data -> Container:/var/upload
+      # XÓA container vẫn giữ file
 
       - ./logs:/logs
-      # Log được lưu ra ngoài container
+      # Log lưu ra ngoài container
 
+    # ===============================
+    # TMPFS RAM CACHE UPLOAD
+    # ===============================
+    tmpfs:
+      - /tmp/upload-cache:size=1g
+      # RAM cache upload (khuyên 512m–2g tùy RAM)
+
+    # ===============================
+    # GIỚI HẠN TÀI NGUYÊN (SWARM)
+    # ===============================
     deploy:
       resources:
         limits:
-          memory: 1200M
+          memory: 1500M    # RAM tối đa container (khuyên 1–4GB)
+          cpus: "2"        # CPU core tối đa (khuyên 1–4)
         reservations:
           memory: 512M
-      # Giới hạn RAM container tối đa 1.2GB
-      # Đảm bảo không ăn hết RAM máy
+          cpus: "0.5"
 
+    # ===============================
+    # GIỚI HẠN TÀI NGUYÊN (compose thường)
+    # ===============================
+    mem_limit: 1500m        # RAM hard limit
+    cpus: 2                 # CPU limit
+
+    # ===============================
+    # FILE DESCRIPTOR LIMIT
+    # ===============================
+    ulimits:
+      nofile:
+        soft: 1048576       # File handle soft limit
+        hard: 1048576       # Hard limit (khuyên >= 65535)
+
+    # ===============================
+    # HEALTH CHECK
+    # ===============================
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/monitor"]
       interval: 30s
       timeout: 5s
       retries: 3
-      # Docker sẽ kiểm tra API monitor mỗi 30s
-      # Nếu fail 3 lần -> container unhealthy
+      # Nếu fail 3 lần → container unhealthy
 
+    # ===============================
+    # LOG ROTATION DOCKER
+    # ===============================
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
-      # Giới hạn log container
-      # Tối đa 3 file, mỗi file 10MB
-      # Tránh log chiếm đầy ổ đĩa
+        max-size: "20m"     # Mỗi file log tối đa 20MB
+        max-file: "5"        # Giữ tối đa 5 file log

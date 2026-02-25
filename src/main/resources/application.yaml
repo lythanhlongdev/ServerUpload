@@ -46,6 +46,11 @@ app:
   # Giúp tránh quá tải IO disk
   max-parallel-upload: ${MAX_PARALLEL_UPLOAD:10}
 
+  # 🆕 Thêm dòng này - đường dẫn xem ảnh
+#  view-dir: ${VIEW_URL:./images}
+  view-dir: ${VIEW_URL:/home/orsted/Pictures/Icould/y}
+  # Số ảnh tải mỗi lần (lazy load)
+  image-page-size: ${IMAGE_PAGE_SIZE:12}
   # Danh sách MIME type được phép
   # Nên validate lại phía backend để tránh upload file độc hại
   allowed-types: ${ALLOWED_TYPES:image/*,video/*,application/pdf}

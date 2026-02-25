@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(20, 20, 20, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-size: 1.3em;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            max-width: 250px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border-radius: 6px;
+            font-size: 0.9em;
+            transition: 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(100, 200, 255, 0.5);
+        }
+
+        button {
+            padding: 8px 14px;
+            background: rgba(100, 150, 255, 0.8);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button:hover {
+            background: rgba(100, 150, 255, 1);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Container */
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* Load more button (ở trên) */
+        .load-top {
+            text-align: center;
+            padding: 12px;
+            position: sticky;
+            top: 60px;
+            z-index: 99;
+            background: rgba(20, 20, 20, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .load-top button {
+            padding: 8px 16px;
+            font-size: 0.85em;
+        }
+
+        /* Gallery */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 8px;
+            padding: 12px;
+        }
+
+        @media (max-width: 1024px) {
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 4px;
+                padding: 8px;
+            }
+        }
+
+        /* Media Item */
+        .media-item {
+            position: relative;
+            cursor: pointer;
+            border-radius: 6px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            aspect-ratio: 1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .media-item:hover {
+            transform: scale(1.05);
+            border-color: rgba(100, 200, 255, 0.5);
+            box-shadow: 0 4px 16px rgba(100, 200, 255, 0.2);
+        }
+
+        .media-item img,
+        .media-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: filter 0.3s;
+        }
+
+        .media-item:hover img,
+        .media-item:hover video {
+            filter: brightness(1.15);
+        }
+
+        /* Video badge */
+        .video-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(255, 87, 34, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .media-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top: 2px solid rgba(100, 200, 255, 0.8);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Status */
+        .status {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .load-more {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .load-more button {
+            padding: 10px 20px;
+        }
+
+        .end-message {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9em;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #mediaContainer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal img,
+        .modal video {
+            max-width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+            user-select: none;
+        }
+
+        .modal-info {
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 10px;
+            font-size: 0.85em;
+            text-align: center;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: white;
+        }
+
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 20px;
+            border-radius: 4px;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+
+        .modal-nav:hover {
+            opacity: 1;
+        }
+
+        .modal-prev {
+            left: 12px;
+        }
+
+        .modal-next {
+            right: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            input[type="text"] {
+                max-width: 100%;
+            }
+
+            .modal-nav {
+                padding: 10px 12px;
+                font-size: 18px;
+            }
+
+            .load-top {
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-content">
+        <h1>🖼️📹 Media Viewer</h1>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Tìm ảnh/video..." />
+            <button onclick="search()">🔍</button>
+            <button onclick="reset()">↺</button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="container" id="container">
+    <!-- Nút load thêm ở trên -->
+    <div class="load-top" id="loadTop" style="display: none;">
+        <button onclick="loadMore()">⬆️ Tải ảnh mới hơn</button>
+    </div>
+
+    <!-- Gallery -->
+    <div class="gallery" id="gallery"></div>
+
+    <!-- Load more button ở dưới -->
+    <div class="load-more" id="loadMore">
+        <button onclick="loadMore()">⬇️ Tải thêm media</button>
+    </div>
+
+    <div class="status" id="status"></div>
+</div>
+
+<!-- Modal View -->
+<div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-nav modal-prev" onclick="prevMedia()">‹</button>
+    <div class="modal-content">
+        <div id="mediaContainer"></div>
+        <div class="modal-info" id="modalInfo"></div>
+    </div>
+    <button class="modal-nav modal-next" onclick="nextMedia()">›</button>
+</div>
+
+<script>
+    // Config
+    const API = '/api/media';
+    let state = {
+        page: 0,
+        allMedia: [],
+        hasMore: true,
+        isLoading: false,
+        searchMode: false,
+        currentIndex: -1
+    };
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMedia();
+        setupInfiniteScroll();
+        setupKeyboard();
+    });
+
+    // Load Media (Lazy Load)
+    function loadMedia() {
+        if (state.isLoading || !state.hasMore) return;
+
+        state.isLoading = true;
+        showStatus('Đang tải...');
+
+        fetch(`${API}/list?page=${state.page}`)
+            .then(r => r.json())
+            .then(data => {
+                state.allMedia = [...state.allMedia, ...data.media];
+                state.hasMore = data.hasMore;
+                state.page++;
+
+                renderMedia(data.media);
+                updateUI();
+                clearStatus();
+            })
+            .catch(e => showStatus('⚠️ Lỗi: ' + e.message))
+            .finally(() => state.isLoading = false);
+    }
+
+    // Render Media (ảnh + video)
+    function renderMedia(media) {
+        const gallery = document.getElementById('gallery');
+
+        media.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'media-item';
+
+            const loading = document.createElement('div');
+            loading.className = 'media-loading';
+
+            let mediaEl;
+
+            if (item.type === 'video') {
+                // 🎬 Video
+                mediaEl = document.createElement('video');
+                mediaEl.src = `${API}/${item.filename}`;
+                mediaEl.muted = true;
+
+                // Thêm badge VIDEO
+                const badge = document.createElement('div');
+                badge.className = 'video-badge';
+                badge.textContent = '🎬 VIDEO';
+                div.appendChild(badge);
+            } else {
+                // 🖼️ Image
+                mediaEl = document.createElement('img');
+                mediaEl.src = `${API}/${item.filename}`;
+                mediaEl.alt = item.filename;
+                mediaEl.loading = 'lazy';
+            }
+
+            mediaEl.onload = mediaEl.onloadedmetadata = () => loading.remove();
+            mediaEl.onerror = () => {
+                loading.remove();
+                div.style.opacity = '0.3';
+            };
+            mediaEl.onclick = (e) => {
+                e.stopPropagation();
+                openModal(item.filename, item.type);
+            };
+
+            div.appendChild(loading);
+            div.appendChild(mediaEl);
+            gallery.appendChild(div);
+        });
+    }
+
+    // Search
+    function search() {
+        const keyword = document.getElementById('searchInput').value.trim();
+        if (!keyword) {
+            reset();
+            return;
+        }
+
+        state.isLoading = true;
+        showStatus('Đang tìm kiếm...');
+
+        fetch(`${API}/search?keyword=${encodeURIComponent(keyword)}`)
+            .then(r => r.json())
+            .then(data => {
+                clearGallery();
+                state.allMedia = data.media;
+                state.searchMode = true;
+                state.hasMore = false;
+
+                renderMedia(data.media);
+                updateUI();
+                showStatus(`Tìm thấy ${data.count} kết quả`);
+            })
+            .catch(e => showStatus('⚠️ Lỗi: ' + e.message))
+            .finally(() => state.isLoading = false);
+    }
+
+    // Reset
+    function reset() {
+        document.getElementById('searchInput').value = '';
+        clearGallery();
+        state = {
+            page: 0,
+            allMedia: [],
+            hasMore: true,
+            isLoading: false,
+            searchMode: false,
+            currentIndex: -1
+        };
+        loadMedia();
+    }
+
+    // Load More
+    function loadMore() {
+        loadMedia();
+    }
+
+    // Modal - Ảnh/Video
+    function openModal(filename, type) {
+        state.currentIndex = state.allMedia.findIndex(m => m.filename === filename);
+        updateModal();
+        document.getElementById('modal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    function nextMedia() {
+        if (state.currentIndex < state.allMedia.length - 1) {
+            state.currentIndex++;
+            updateModal();
+        }
+    }
+
+    function prevMedia() {
+        if (state.currentIndex > 0) {
+            state.currentIndex--;
+            updateModal();
+        }
+    }
+
+    function updateModal() {
+        const media = state.allMedia[state.currentIndex];
+        const container = document.getElementById('mediaContainer');
+        container.innerHTML = '';
+
+        if (media.type === 'video') {
+            const video = document.createElement('video');
+            video.src = `${API}/${media.filename}`;
+            video.controls = true;
+            video.autoplay = true;
+            container.appendChild(video);
+        } else {
+            const img = document.createElement('img');
+            img.src = `${API}/${media.filename}`;
+            container.appendChild(img);
+        }
+
+        document.getElementById('modalInfo').textContent =
+            `${state.currentIndex + 1} / ${state.allMedia.length}`;
+    }
+
+    // Infinite Scroll
+    function setupInfiniteScroll() {
+        const container = document.getElementById('container');
+
+        container.addEventListener('scroll', () => {
+            const scrollTop = container.scrollTop;
+            const scrollPercent = (container.scrollTop + container.clientHeight) /
+                                container.scrollHeight;
+
+            // Scroll lên gần trên
+            if (scrollTop < 100 && state.page > 0) {
+                document.getElementById('loadTop').style.display = 'block';
+            } else {
+                document.getElementById('loadTop').style.display = 'none';
+            }
+
+            // Scroll xuống gần dưới
+            if (scrollPercent > 0.85 && !state.isLoading && state.hasMore) {
+                loadMore();
+            }
+        });
+    }
+
+    // Keyboard
+    function setupKeyboard() {
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('modal');
+            if (!modal.classList.contains('active')) return;
+
+            if (e.key === 'ArrowRight') nextMedia();
+            if (e.key === 'ArrowLeft') prevMedia();
+            if (e.key === 'Escape') closeModal();
+        });
+    }
+
+    // UI Helpers
+    function clearGallery() {
+        document.getElementById('gallery').innerHTML = '';
+    }
+
+    function updateUI() {
+        const loadMoreDiv = document.getElementById('loadMore');
+        if (state.hasMore && !state.searchMode) {
+            loadMoreDiv.innerHTML = '<button onclick="loadMore()">⬇️ Tải thêm media</button>';
+        } else {
+            loadMoreDiv.innerHTML = state.allMedia.length > 0
+                ? '<p class="end-message">✓ Tất cả media</p>'
+                : '';
+        }
+    }
+
+    function showStatus(msg) {
+        document.getElementById('status').textContent = msg;
+    }
+
+    function clearStatus() {
+        setTimeout(() => {
+            document.getElementById('status').textContent = '';
+        }, 1000);
+    }
+
+    // Close modal when click outside
+    document.getElementById('modal').addEventListener('click', (e) => {
+        if (e.target.id === 'modal') closeModal();
+    });
+</script>
+
+</body>
+</html>
