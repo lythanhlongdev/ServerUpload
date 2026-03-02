@@ -1,0 +1,62 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: ${SERVER_ADDRESS:0.0.0.0}
+
+  tomcat:
+    threads:
+      max: ${TOMCAT_MAX_THREADS:200}      # ⬆️ Increased from 50
+      min-spare: ${TOMCAT_MIN_SPARE:50}   # ⬆️ Increased from 10
+    
+    # HTTP Keep-Alive
+    connection-timeout: 60000ms
+    keep-alive-timeout: 60000ms
+    accept-count: 100
+    max-connections: 1000
+    
+    # Socket optimization
+    socket-buffer-size: 16384              # 16KB buffer
+    
+    # Disable unnecessary features
+    use-relative-redirects: true
+    reuse-addr: true
+
+spring:
+  application:
+    name: ServerUpload
+  
+  # Lazy initialization for faster startup
+  main:
+    lazy-initialization: true
+  
+  servlet:
+    multipart:
+      enabled: true
+      # ⬆️ Critical: Bypass temp directory
+      location: ${TEMP_DIR:/dev/shm}  # Use RAM disk on Linux
+      file-size-threshold: -1         # Write directly to final location
+      max-file-size: ${MAX_FILE_SIZE:10GB}
+      max-request-size: ${MAX_REQUEST_SIZE:10GB}
+  
+  # Static resource caching
+  resources:
+    cache:
+      period: 31536000  # 1 year
+      cachecontrol:
+        max-age: 31536000
+        must-revalidate: true
+
+# Application
+app:
+  upload-dir: ${UPLOAD_DIR:/var/uploads/files}
+  max-parallel-upload: ${MAX_PARALLEL_UPLOAD:20}
+  chunk-size: 1048576  # 1MB chunks
+
+# Logging (async)
+logging:
+  level:
+    root: ${LOG_LEVEL:WARN}
+    ltldev.SeverUpFile: ${APP_LOG_LEVEL:INFO}
+  
+  async:
+    queue-size: 512
+    discard-threshold: 0

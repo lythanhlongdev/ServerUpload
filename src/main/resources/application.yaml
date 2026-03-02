@@ -35,12 +35,15 @@ server:
 # =====================================================
 # APPLICATION CUSTOM CONFIG
 # =====================================================
+# ========== UPLOAD CONFIGURATION ==========
 app:
-  # Thư mục lưu file upload
-  # Phải đảm bảo user chạy service có quyền ghi
-  # Mặc định: /var/upload
-  upload-dir: ${UPLOAD_DIR:/var/upload}
-#  upload-dir: ${UPLOAD_DIR:/home/orsted/Pictures/Cloud}
+  # Đường dẫn lưu file upload
+  upload-dir: ${UPLOAD_DIR:/home/orsted/Pictures/Cloud}
+
+  # Hoặc có thể dùng các biến khác:
+  # upload-dir: /home/user/uploads
+  # upload-dir: /data/uploads
+  # upload-dir: C:/uploads  (Windows)
 
   # Giới hạn số upload song song (tự xử lý ở service nếu cần)
   # Giúp tránh quá tải IO disk
@@ -48,7 +51,7 @@ app:
 
   # 🆕 Thêm dòng này - đường dẫn xem ảnh
 #  view-dir: ${VIEW_URL:./images}
-  view-dir: ${VIEW_URL:/home/orsted/Pictures/Icould/y}
+  view-dir: ${VIEW_URL:/home/orsted/Pictures/Cloud}
   # Số ảnh tải mỗi lần (lazy load)
   image-page-size: ${IMAGE_PAGE_SIZE:12}
   # Danh sách MIME type được phép
@@ -73,11 +76,11 @@ spring:
 
       # Kích thước tối đa cho mỗi file
       # Mặc định: 5GB
-      max-file-size: ${MAX_FILE_SIZE:5GB}
+      max-file-size: ${MAX_FILE_SIZE:10GB}
 
       # Tổng kích thước tối đa cho một request
       # Mặc định: 10GB
-      max-request-size: ${MAX_REQUEST_SIZE:10GB}
+      max-request-size: ${MAX_REQUEST_SIZE:50GB}
 
       # Ngưỡng ghi file xuống disk
       # Giữ nhỏ để tránh giữ file lớn trong RAM

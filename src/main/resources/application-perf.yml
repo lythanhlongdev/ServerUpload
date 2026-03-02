@@ -1,0 +1,39 @@
+# Production performance tuning
+spring:
+  web:
+    resources:
+      # Enable gzip compression
+      chain:
+        enabled: true
+        gzip: true
+    compression:
+      enabled: true
+      min-response-size: 1024
+      mime-types: text/html,text/xml,text/plain,text/css,application/javascript
+
+server:
+  compression:
+    enabled: true
+    min-response-size: 1024
+    mime-types: text/html,text/xml,text/plain,text/css,application/javascript,application/json
+  
+  tomcat:
+    # Connection pooling
+    threads:
+      max: 200
+      min-spare: 50
+    
+    # Keep-Alive optimization
+    connection-timeout: 60000ms
+    keep-alive-timeout: 60000ms
+    accept-count: 100
+    max-connections: 1000
+    max-keep-alive-requests: 100
+    
+    # Buffer optimization
+    socket-buffer-size: 16384
+  servlet:
+    session:
+          persistent: false
+
+# HTTP header caching

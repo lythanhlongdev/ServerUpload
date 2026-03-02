@@ -1,0 +1,46 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: ${SERVER_ADDRESS:0.0.0.0}
+
+  tomcat:
+    threads:
+      max: 300          # Increased for multiple lanes
+      min-spare: 100
+    max-connections: 2000
+    accept-count: 200
+    connection-timeout: 120000ms  # 2 minutes for large files
+    keep-alive-timeout: 60000ms
+
+spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10GB
+      max-request-size: 50GB      # ⬆️ Support large batches
+      file-size-threshold: -1     # Direct streaming
+
+# Upload Queueing
+upload:
+  queue:
+    large-file-threshold: 536870912    # 512MB
+    medium-file-threshold: 104857600   # 100MB
+  
+  batch:
+    max-files: 100
+    max-total-size: 10737418240        # 10GB per batch
+  
+  memory:
+    max-usage-percent: 75
+    warn-percent: 60
+
+# Application
+app:
+  upload-dir: ${UPLOAD_DIR:/var/uploads/files}
+  chunk-size: 1048576  # 1MB
+
+# Logging
+logging:
+  level:
+    ltldev.SeverUpFile: INFO
+  async:
+    queue-size: 1024
